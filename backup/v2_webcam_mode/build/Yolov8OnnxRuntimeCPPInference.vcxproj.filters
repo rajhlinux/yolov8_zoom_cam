@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="F:\AI_Componets\AI_Projects\ultralytics-main\examples\YOLOv8-ONNXRuntime-CPP\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\AI_Componets\AI_Projects\ultralytics-main\examples\YOLOv8-ONNXRuntime-CPP\inference.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="F:\AI_Componets\AI_Projects\ultralytics-main\examples\YOLOv8-ONNXRuntime-CPP\inference.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="F:\AI_Componets\AI_Projects\ultralytics-main\examples\YOLOv8-ONNXRuntime-CPP\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{CA04C25C-A559-37CC-9AA8-91B54D7C860F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{E63A487D-680D-39BE-AE65-36B13C49B365}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
