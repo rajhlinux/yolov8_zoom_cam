@@ -20,9 +20,9 @@ Read the notes in `main.cpp` how to do this.
 
 You would also need `ONNX Runtime Engine` (GPU version for windows).
 
-------------------------------------------------
+-------------------------------------------------
 # Below is the required dependencies for Yolov8:
-------------------------------------------------
+-------------------------------------------------
 
 # YOLOv8 OnnxRuntime C++
 
