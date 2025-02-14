@@ -1,0 +1,4 @@
+# Ignore the backup directory 
+backup/ 
+
+# Other patterns to ignore node_modules/ dist/ build/ *.log *.tmp

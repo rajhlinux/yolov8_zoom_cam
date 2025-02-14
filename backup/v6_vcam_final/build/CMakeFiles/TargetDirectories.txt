@@ -1,3 +1,0 @@
-F:/AI_Componets/AI_Projects/ultralytics-main/examples/YOLOv8-ONNXRuntime-CPP/build/CMakeFiles/Yolov8OnnxRuntimeCPPInference.dir
-F:/AI_Componets/AI_Projects/ultralytics-main/examples/YOLOv8-ONNXRuntime-CPP/build/CMakeFiles/ALL_BUILD.dir
-F:/AI_Componets/AI_Projects/ultralytics-main/examples/YOLOv8-ONNXRuntime-CPP/build/CMakeFiles/ZERO_CHECK.dir
