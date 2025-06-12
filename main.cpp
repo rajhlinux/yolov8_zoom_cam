@@ -1,4 +1,34 @@
 /*
+DO NOT USE FIREFOX - RETARDED UI LOGIC FOR WEBCAM INTERFACE
+Testing cameras via Zoom Test - https://zoom.us/test
+
+
+Update
+6/12/2025 @ 2:07 AM - main_2.cpp - Clean Version.
+Uses Yolo8 as inference with MSMF UVC cam input
+Does not contain BG removal.
+Read main_1.cpp update required notes to obtain proper BG removal.
+
+
+Update:
+6/11/2025 @ 10:30 PM - main_1.cpp - Prototype Version.
+This is the version which contains OpenCV's background removal implementation and replacing it with a video/image.
+Uses MSMF (Microsoft Media Foundation).
+The OpenCV BG removal is an issue since it is not efficient, buggy and requires GPU inference for Background removal, use the Plugin from OBS of background removal and implement it in this code.
+Trigger the background removal/activation with a toggle key.
+More over, the BG removal models from OBS studio is retarded, can not effectively remove chair.
+Use "Robust Video Matting (RVM)" mode for BG removal, it uses intelligent logic.
+Use iPhone's camera input for OpenCV.
+Speed up the code by great magnitude, it is currently shit slow.
+Uses the Nano version of YOLO8...
+
+Mandatory:
+Create a program which quickly runs and displays all camera's rendered output along with it's DShow/opencv camera's UVC device path.
+This is needed so that I can quickly change the camera device used for AI inference in the main.cpp and not waste time to do so.
+
+Remove CMAKE, it seriously complicates things and for the project, compile via CLI.
+
+-----------
 
 Update:
 2/14/2025 @ 3:AM
@@ -28,7 +58,20 @@ Thus the virtual cam now displays the yolov8 inference in real time.
 The yolov8 code was obtain from ultralytics's ONNX CPP example and then modified to contain `akvirtualcam` virtual cam code. The Cmakelist is also modified.
 
 ------------------------------------------------
-How to compile:ca
+How to compile:
+
+Make sure webcam driver is using the default uvc drivers and not winusb drivers.
+
+First:
+
+"F:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat" x64
+
+set PATH=F:\OpenCV_Course\vcpkg\downloads\tools\powershell-core-7.2.24-windows;%PATH%
+
+Then:
+
+F:
+F:\AI_Componets\AI_Projects\ultralytics-main\examples\YOLOv8-ONNXRuntime-CPP\build
 
 mkdir build
 cd build
@@ -39,6 +82,20 @@ cmake --build . --config Release -- /m:4
 Make sure to specify the WebCam device Index. <--------------------------------------
 
 ---------------------------------------------
+
+How to run code:
+
+go to:
+
+cd F:\AI_Componets\AI_Projects\ultralytics-main\examples\YOLOv8-ONNXRuntime-CPP\build\Release
+
+then run:
+
+Yolov8OnnxRuntimeCPPInference.exe
+
+
+
+------------
 
 Make sure to first initialize `akvirtualcam` virtual cam instance before proceeding.
 Here is how to create a `akvirtualcam` virtual cam instance:
@@ -68,6 +125,19 @@ AkVCamManager update
     - AkVCamManager remove-devices
     - AkVCamManager devices
 ---------------------------------------------
+
+Run the program:
+
+F:
+cd F:\AI_Componets\AI_Projects\ultralytics-main\examples\YOLOv8-ONNXRuntime-CPP\build\Release
+Yolov8OnnxRuntimeCPPInference_shopper_plug.exe
+
+
+
+
+ 
+-------------------
+
 
 Tools used to obtain proper aspect ratios:
 
@@ -126,15 +196,10 @@ struct StreamProcess
     PROCESS_INFORMATION procInfo;
 };
 
-void Detector(YOLO_V8*& p, cv::VideoCapture& cap, cv::VideoCapture& bg_v, StreamProcess& streamProc) 
+void Detector(YOLO_V8*& p, cv::VideoCapture& cap, StreamProcess& streamProc) 
 {
     cv::Mat frame;
     cv::Mat frame_1080P;
-
-    Mat ref_img, bg;            // Used for background substraction.
-    cap.read(ref_img);          // Used for background substraction. take another read from video input and store it as ref-img buffer.
-    int flag = 0;               // Used for background substraction.
-
 
     while (cap.read(frame)) 
     {
@@ -145,8 +210,6 @@ void Detector(YOLO_V8*& p, cv::VideoCapture& cap, cv::VideoCapture& bg_v, Stream
 
         // Copy the `frame` webcam data to `frame_1080P`. This was prototype code, to use one for inference which uses downscaled res, while post processed output would be scaled and displayed to high-res.
         // frame.copyTo(frame_1080P);
-
-
 
 
         // Yolov8 Inference: ----------------------------------------------------
@@ -187,80 +250,22 @@ void Detector(YOLO_V8*& p, cv::VideoCapture& cap, cv::VideoCapture& bg_v, Stream
 
         //----------------------------
 
-        // Background subtraction, to remove background and replace it with a picture or video: (Useful for webcam meetings.)
-
-
-        bg_v.read(bg);    // read the background overlay video input.
-
-        if (bg.empty()) 
-        {
-            bg_v.set(CAP_PROP_POS_FRAMES, 0);
-            bg_v.read(bg);
-        }
-
-        Mat resized;
-        resize(bg, resized, ref_img.size(), 0, 0, INTER_AREA);
-        bg = resized;
-
-        if (flag == 0) 
-        {
-            ref_img = frame.clone();
-        }
-
-        // Create a mask
-        Mat diff1, diff2, diff, gray, fgmask, fgmask_inv, fgimg, bgimg, processed_output;
-        absdiff(frame, ref_img, diff1);
-        absdiff(ref_img, frame, diff2);
-        diff = diff1 + diff2;
-
-        // Apply Gaussian blur to reduce noise
-        GaussianBlur(diff, diff, Size(9, 9), 0);
-
-        // Adjust thresholds to reduce noise
-        diff.setTo(0, abs(diff) < 33.0);  // Increase threshold <-------------- 30 seems to be the ideal threshold.
-        cvtColor(diff, gray, COLOR_BGR2GRAY);
-        gray.setTo(0, abs(gray) < 4);    // Increase threshold
-
-        // Apply morphological operations
-        Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(9, 9));
-        threshold(gray, fgmask, 1, 255, THRESH_BINARY);
-        erode(fgmask, fgmask, kernel);  // Erode to remove small noise
-        dilate(fgmask, fgmask, kernel); // Dilate to fill gaps
-
-        // Invert the mask
-        bitwise_not(fgmask, fgmask_inv);
-
-        // Use the masks to extract the relevant parts from FG and BG
-        bitwise_and(frame, frame, fgimg, fgmask);
-        bitwise_and(bg, bg, bgimg, fgmask_inv);
-
-        // Combine both the BG and the FG images
-        add(bgimg, fgimg, processed_output);
-
         // To confirm if output is working correctly, comment it to reduce overhead. Create a window with the original frame size:-------------------------------------
-        cv::namedWindow("foo", cv::WINDOW_NORMAL);          // `foo` is the name of the window GUI.
-        cv::resizeWindow("foo", 1920, 1080);
+        cv::namedWindow("WebCam_Test", cv::WINDOW_NORMAL);          // `foo` is the name of the window GUI.
+        cv::resizeWindow("WebCam_Test", 1920, 1080);
 
         // Output for testing to a GUI display window:
-        cv::imshow("foo", processed_output);
+        cv::imshow("WebCam_Test", frame);
+        //cv::imshow("WebCam_Test", processed_output);
         
+
+
         // User input control variables:
-        
         char key = (char)waitKey(5);
         if (key == 'q') 
         {
             break;
         } 
-        else if (key == 'd') 
-        {
-            flag = 1;
-            cout << "Background Captured" << endl;
-        } 
-        else if (key == 'r') 
-        {
-            flag = 0;
-            cout << "Ready to Capture new Background" << endl;
-        }
 
 
         // Inject to virtual camera: ---------------------------------------------------
@@ -275,7 +280,7 @@ void Detector(YOLO_V8*& p, cv::VideoCapture& cap, cv::VideoCapture& bg_v, Stream
 
         // Convert frame to RGB format and write to virtual camera. - With background substraction.
         cv::Mat rgbFrame;
-        cv::cvtColor(processed_output, rgbFrame, cv::COLOR_BGR2RGB);
+        cv::cvtColor(frame, rgbFrame, cv::COLOR_BGR2RGB);
         cv::resize(rgbFrame, rgbFrame, cv::Size(WIDTH, HEIGHT));  // Ensure frame size matches the virtual camera 
 
         // Now inject to virtual camera:
@@ -301,13 +306,12 @@ void Detector(YOLO_V8*& p, cv::VideoCapture& cap, cv::VideoCapture& bg_v, Stream
 
     }
     cv::destroyAllWindows();
-    
-    bg_v.release();
 }
 
 
 
-void Classifier(YOLO_V8*& p, cv::VideoCapture& cap, StreamProcess& streamProc) {
+void Classifier(YOLO_V8*& p, cv::VideoCapture& cap, StreamProcess& streamProc) 
+{
     cv::Mat frame;
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -420,7 +424,9 @@ void DetectTest(StreamProcess& streamProc)  // main function calls this function
 
     //--------------
 
-    int deviceIndex = 0; // Change this to the correct device index if needed
+    // [0] is back, [1] is side, [3] is iPhone (Iriun App).
+
+    int deviceIndex = 3; // Change this to the correct device index if needed <---------------------------------------------------- /////////////////////////////// CAMERA DEVICE
 
     cv::VideoCapture cap(deviceIndex, cv::CAP_MSMF);
     
@@ -435,20 +441,7 @@ void DetectTest(StreamProcess& streamProc)  // main function calls this function
         return;
     }
 
-    //-------------------
-
-    // Background image path which will replace webcam's input background.
-    cv::VideoCapture oceanVideo("E:/miracle_plus_2024/output_reduced_first_4_mins.mp4");
-
-    if (!oceanVideo.isOpened()) 
-    {
-        cerr << "Error: Unable to open video source." << endl;
-        return;
-    }
-
-    //---------------------
-
-    Detector(yoloDetector, cap, oceanVideo, streamProc);
+    Detector(yoloDetector, cap, streamProc);
 }
 
 
@@ -507,7 +500,8 @@ int main()
     memset(&streamProc.procInfo, 0, sizeof(PROCESS_INFORMATION));
 
     // Start the stream.
-    if (!CreateProcessA(NULL, cmd, NULL, NULL, TRUE, 0, NULL, NULL, &streamProc.startupInfo, &streamProc.procInfo)) {
+    if (!CreateProcessA(NULL, cmd, NULL, NULL, TRUE, 0, NULL, NULL, &streamProc.startupInfo, &streamProc.procInfo)) 
+    {
         fprintf(stderr, "Failed to create process: %lu\n", GetLastError());
         return -1;
     }

@@ -1,0 +1,4 @@
+DO NOT USE FIREFOX - RETARDED UI LOGIC FOR WEBCAM INTERFACE selection.
+Use Main.CPP for working on the latest release.
+Testing cameras via Zoom Test - https://zoom.us/test
+
